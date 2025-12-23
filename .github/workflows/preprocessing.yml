@@ -47,7 +47,7 @@ jobs:
       - name: Run preprocessing
         run: |
           cd ${{ github.workspace }}
-          python preprocessing/automate_heart.py
+          python preprocessing/automate_Dody.py
           echo "✅ Preprocessing completed"
 
       # Step 5: Verifikasi output files
