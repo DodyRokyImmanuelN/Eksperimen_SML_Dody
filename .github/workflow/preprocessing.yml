@@ -1,0 +1,104 @@
+name: Preprocessing Heart Disease Dataset
+
+# ===== TRIGGER =====
+on:
+  # Trigger manual dari GitHub Actions tab
+  workflow_dispatch:
+
+  # Trigger otomatis setiap hari jam 12 siang UTC (19:00 WIB)
+  schedule:
+    - cron: "0 12 * * *"
+
+  # Trigger saat push ke branch main
+  push:
+    branches:
+      - main
+    paths:
+      - "heart_raw.csv"
+      - "preprocessing/automate_heart.py"
+      - ".github/workflows/preprocessing_heart.yml"
+
+# ===== JOB =====
+jobs:
+  preprocessing:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout repository
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      # Step 2: Setup Python
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      # Step 3: Install dependencies
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "✅ Dependencies installed"
+
+      # Step 4: Jalankan preprocessing script
+      - name: Run preprocessing
+        run: |
+          cd ${{ github.workspace }}
+          python preprocessing/automate_heart.py
+          echo "✅ Preprocessing completed"
+
+      # Step 5: Verifikasi output files
+      - name: Verify output
+        run: |
+          if [ -f "preprocessing/heart_preprocessing.csv" ]; then
+            echo "✅ Preprocessed data created successfully"
+            wc -l preprocessing/heart_preprocessing.csv
+          else
+            echo "❌ Preprocessed data not found!"
+            exit 1
+          fi
+
+          if [ -f "preprocessing/heart_scaler.pkl" ]; then
+            echo "✅ Scaler file created successfully"
+            ls -lh preprocessing/heart_scaler.pkl
+          else
+            echo "⚠️ Warning: Scaler file not found"
+          fi
+
+          if [ -f "preprocessing/heart_preprocessing_stats.txt" ]; then
+            echo "✅ Stats file created successfully"
+            cat preprocessing/heart_preprocessing_stats.txt
+          else
+            echo "⚠️ Warning: Stats file not found"
+          fi
+
+      # Step 6: Commit processed data
+      - name: Commit processed data
+        if: always()
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action Bot"
+          git add preprocessing/heart_preprocessing.csv
+          git add preprocessing/heart_scaler.pkl
+          git add preprocessing/heart_preprocessing_stats.txt
+          git commit -m "🤖 Auto: Update heart preprocessed dataset - $(date +'%Y-%m-%d %H:%M:%S')" || echo "ℹ️ No changes to commit"
+          git push origin main || echo "ℹ️ Push skipped"
+
+      # Step 7: Summary
+      - name: Job Summary
+        run: |
+          echo "## ✅ Heart Disease Preprocessing Workflow Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Timestamp**: $(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "**Dataset**: Heart Disease Dataset" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Output Files:" >> $GITHUB_STEP_SUMMARY
+          echo "- \`preprocessing/heart_preprocessing.csv\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`preprocessing/heart_scaler.pkl\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`preprocessing/heart_preprocessing_stats.txt\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### File Statistics:" >> $GITHUB_STEP_SUMMARY
+          wc -l preprocessing/heart_preprocessing.csv >> $GITHUB_STEP_SUMMARY || echo "File not found"
