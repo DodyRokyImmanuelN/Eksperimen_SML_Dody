@@ -15,7 +15,7 @@ on:
       - main
     paths:
       - "heart_raw.csv"
-      - "preprocessing/automate_heart.py"
+      - "preprocessing/automate_Dody.py"
       - ".github/workflows/preprocessing_heart.yml"
 
 # ===== JOB =====
